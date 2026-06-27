@@ -201,7 +201,7 @@ with col6:
         labels={'Score_%': 'الدرجة (%)', 'count': 'عدد الموظفين'},
         color_discrete_sequence=['#10B981']
     )
-    fig_hist.update_layout(template='plotly_white', barcode_mode='overlay')
+    fig_hist.update_layout(template='plotly_white', barmode='overlay')
     st.plotly_chart(fig_hist, use_container_width=True)
 
 # 7. Data Preview Section
