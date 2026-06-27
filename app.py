@@ -1,84 +1,43 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
+import plotly.graph_objects as ui
 
-# 1. Page Configuration (Premium UI Settings)
+# 1. Page Configuration
 st.set_page_config(
-    page_title="Corporate Training Insights Dashboard",
+    page_title="Training & Development Dashboard",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Enterprise-Level CSS Styling
+# Custom CSS for Professional Styling
 st.markdown("""
     <style>
-    /* Background and global font adjustments */
-    .stApp {
-        background-color: #f4f6f9;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    /* KPI Card Container styling */
-    .kpi-container {
-        background-color: #ffffff;
+    .main { background-color: #f8f9fa; }
+    div[data-testid="stMetricValue"] > div { font-size: 24px; font-weight: bold; color: #1E3A8A; }
+    div[data-testid="stMetricLabel"] > label { font-size: 14px; font-weight: 600; color: #4B5563; }
+    .stCard {
+        background-color: white;
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        border-left: 5px solid #1E3A8A;
-        transition: transform 0.2s;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
     }
-    .kpi-container:hover {
-        transform: translateY(-2px);
-    }
-    
-    /* Metrics override */
-    div[data-testid="stMetricValue"] > div {
-        font-size: 26px;
-        font-weight: 700;
-        color: #0F172A;
-    }
-    div[data-testid="stMetricLabel"] > label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    /* Custom headers and section lines */
-    h1 {
-        color: #1E3A8A;
-        font-weight: 800;
-        font-size: 2.5rem;
-        margin-bottom: 5px;
-    }
-    h2, h3 {
-        color: #334155;
-        font-weight: 600;
-    }
-    
-    /* Stylish dividers */
-    .custom-hr {
-        margin: 20px 0;
-        border: 0;
-        height: 1px;
-        background: linear-gradient(to right, #1E3A8A, #cbd5e1, transparent);
-    }
+    h1, h2, h3 { color: #1E3A8A; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Main Title Layout
-st.markdown("<h1>📊 لوحة مؤشرات التدريب والتطوير المؤسسي</h1>", unsafe_allow_html=True)
-st.markdown("<p style='color: #475569; font-size: 1.1rem; margin-top:-10px;'>تحليلات متقدمة لتقييم كفاءة البرامج التدريبية وعوائد الاستثمار في رأس المال البشري.</p>", unsafe_allow_html=True)
-st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+# 2. Main Title & Description
+st.title("📊 لوحة تحليلات التدريب والتطوير | Training & Development Dashboard")
+st.markdown("تحليل شامل ومؤشرات الأداء لبرامج التدريب وتكلفة الموظفين.")
+st.markdown("---")
 
-# 3. Streamlined File Uploader inside an Expander / Nice Container
-with st.container():
-    uploaded_file = st.file_uploader("📂 مركز رفع ملفات البيانات (يدعم صيغ CSV & Excel)", type=["csv", "xlsx"], help="ارفع ملف التدريب المحدث هنا لتحديث اللوحة تلقائياً")
+# 3. Dynamic File Uploader Component
+st.subheader("📂 تحميل ملف البيانات (Data Source)")
+uploaded_file = st.file_uploader("قم برفع ملف البيانات الخاص بك بصيغة (CSV أو Excel)", type=["csv", "xlsx"])
 
-# Function to read and prepare data beautifully
+# دالة معالجة البيانات بعد الرفع
 def process_data(file):
     if file.name.endswith('.csv'):
         df = pd.read_csv(file)
@@ -90,39 +49,46 @@ def process_data(file):
     df['Month'] = df['Start_Date'].dt.to_period('M').astype(str)
     return df
 
-# Layout Control after file upload
+# التحقق من وجود الملف المرفوع
 if uploaded_file is not None:
     try:
         df = process_data(uploaded_file)
+        st.success("✅ تم تحميل البيانات وقراءتها بنجاح!")
         
-        # 4. Sidebar Filters Styling
-        st.sidebar.markdown("<h2 style='color:#1E3A8A; font-size:1.5rem;'>🎯 فلاتر التحكم المتقدمة</h2>", unsafe_allow_html=True)
+        # 4. Sidebar Filters (تظهر فقط بعد رفع الملف)
+        st.sidebar.header("🔍 فلاتر التحكم (Filters)")
         st.sidebar.markdown("---")
 
-        departments = ['الكل (All Departments)'] + list(df['Department'].unique())
-        selected_dept = st.sidebar.selectbox("🏢 تصفية حسب القسم", departments)
+        # Department Filter
+        departments = ['الكل'] + list(df['Department'].unique())
+        selected_dept = st.sidebar.selectbox("القسم (Department)", departments)
 
-        categories = ['الكل (All Categories)'] + list(df['Category'].unique())
-        selected_cat = st.sidebar.selectbox("🗂️ الفئة التدريبية", categories)
+        # Category Filter
+        categories = ['الكل'] + list(df['Category'].unique())
+        selected_cat = st.sidebar.selectbox("الفئة التدريبية (Category)", categories)
 
+        # Date Filter
         min_date = df['Start_Date'].min().date()
         max_date = df['Start_Date'].max().date()
-        selected_dates = st.sidebar.date_input("📅 النطاق الزمني للتدريب", [min_date, max_date], min_value=min_date, max_value=max_date)
+        selected_dates = st.sidebar.date_input("فترة التدريب (Date Range)", [min_date, max_date], min_value=min_date, max_value=max_date)
 
-        # Base Filter Engine
+        # Apply Filters
         filtered_df = df.copy()
 
-        if selected_dept != 'الكل (All Departments)':
+        if selected_dept != 'الكل':
             filtered_df = filtered_df[filtered_df['Department'] == selected_dept]
 
-        if selected_cat != 'الكل (All Categories)':
+        if selected_cat != 'الكل':
             filtered_df = filtered_df[filtered_df['Category'] == selected_cat]
 
         if len(selected_dates) == 2:
             start_date, end_date = pd.to_datetime(selected_dates[0]), pd.to_datetime(selected_dates[1])
             filtered_df = filtered_df[(filtered_df['Start_Date'] >= start_date) & (filtered_df['Start_Date'] <= end_date)]
 
-        # Calculations
+        # 5. Key Performance Indicators (KPIs)
+        st.subheader("📌 المؤشرات الرئيسية (KPIs)")
+        kpi1, kpi2, kpi3, kpi4, kpi5, kpi6 = st.columns(6)
+
         total_trainings = filtered_df.shape[0]
         total_employees = filtered_df['Employee_ID'].nunique() if total_trainings > 0 else 0
         total_duration = filtered_df['Duration_Hours'].sum() if total_trainings > 0 else 0
@@ -132,55 +98,45 @@ if uploaded_file is not None:
         completion_rate = (filtered_df['Completed'].value_counts().get('Yes', 0) / total_trainings * 100) if total_trainings > 0 else 0
         cert_rate = (filtered_df['Certificate'].value_counts().get('Yes', 0) / total_trainings * 100) if total_trainings > 0 else 0
 
-        # 5. Executive KPIs Grid with custom style wrapping
-        st.markdown("<h3 style='margin-bottom:15px;'>📌 ملخص الأداء الاستراتيجي</h3>", unsafe_allow_html=True)
-        kpi_cols = st.columns(6)
-        
-        metrics_data = [
-            ("إجمالي البرامج", f"{total_trainings:,}", kpi_cols[0]),
-            ("الموظفين المشاركين", f"{total_employees:,}", kpi_cols[1]),
-            ("الساعات الاستثمارية", f"{total_duration:,} س", kpi_cols[2]),
-            ("الاستثمار الإجمالي", f"£ {total_cost:,}", kpi_cols[3]),
-            ("معدل تقييم الأداء", f"{avg_score:.1f}%", kpi_cols[4]),
-            ("نسبة النجاح / الشهادات", f"{completion_rate:.0f}% / {cert_rate:.0f}%", kpi_cols[5])
-        ]
-        
-        for label, val, col in metrics_data:
-            with col:
-                st.markdown(f"<div class='kpi-container'>", unsafe_allow_html=True)
-                st.metric(label, val)
-                st.markdown("</div>", unsafe_allow_html=True)
+        with kpi1:
+            st.metric("إجمالي التدريبات", f"{total_trainings:,}")
+        with kpi2:
+            st.metric("الموظفين المشاركين", f"{total_employees:,}")
+        with kpi3:
+            st.metric("الساعات التدريبية", f"{total_duration:,} س")
+        with kpi4:
+            st.metric("التكلفة الإجمالية", f"£ {total_cost:,}")
+        with kpi5:
+            st.metric("متوسط التقييم", f"{avg_score:.1f}%")
+        with kpi6:
+            st.metric("نسبة الإتمام / الشهادات", f"{completion_rate:.1f}% / {cert_rate:.1f}%")
 
-        st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+        st.markdown("---")
 
-        # 6. Charts Section (Advanced Themes)
-        chart_col1, chart_col2 = st.columns(2)
+        # 6. Charts Section
+        col1, col2 = st.columns(2)
 
-        with chart_col1:
-            st.markdown("### 🏢 توزيع النفقات وساعات العمل للأقسام")
+        with col1:
+            st.subheader("🏢 التكلفة والساعات لكل قسم (Department)")
             if total_trainings > 0:
                 dept_analysis = filtered_df.groupby('Department').agg({'Cost_EGP': 'sum', 'Duration_Hours': 'sum'}).reset_index()
                 fig_dept = px.bar(
                     dept_analysis, 
                     x='Department', 
                     y='Cost_EGP',
-                    text_auto='.3s',
+                    text_auto='.2s',
+                    title="إجمالي التكلفة حسب القسم (بالجنيه المصري)",
                     color='Duration_Hours',
-                    color_continuous_scale='Cividis',
-                    labels={'Cost_EGP': 'التكلفة الإجمالية (EGP)', 'Duration_Hours': 'مجموع الساعات'}
+                    color_continuous_scale='Blues',
+                    labels={'Cost_EGP': 'التكلفة (EGP)', 'Duration_Hours': 'ساعات التدريب'}
                 )
-                fig_dept.update_layout(
-                    template='plotly_white',
-                    margin=dict(l=20, r=20, t=10, b=20),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
+                fig_dept.update_layout(template='plotly_white')
                 st.plotly_chart(fig_dept, use_container_width=True)
             else:
-                st.info("لا توجد بيانات متاحة حالياً للتصفية الحالية.")
+                st.warning("لا توجد بيانات كافية لعرض رسم الأقسام.")
 
-        with chart_col2:
-            st.markdown("### 🗂️ تحليل الاستثمار حسب الفئات التدريبية")
+        with col2:
+            st.subheader("🗂️ التكلفة والساعات لكل فئة تدريبية (Category)")
             if total_trainings > 0:
                 cat_analysis = filtered_df.groupby('Category').agg({'Cost_EGP': 'sum', 'Duration_Hours': 'sum'}).reset_index()
                 fig_cat = px.bar(
@@ -188,93 +144,93 @@ if uploaded_file is not None:
                     y='Category', 
                     x='Cost_EGP',
                     orientation='h',
-                    text_auto='.3s',
+                    text_auto='.2s',
+                    title="توزيع التكلفة حسب الفئة التدريبية",
                     color='Cost_EGP',
-                    color_continuous_scale='Viridis',
-                    labels={'Cost_EGP': 'التكلفة الاستثمارية (EGP)', 'Category': 'الفئة'}
+                    color_continuous_scale='Purples',
+                    labels={'Cost_EGP': 'التكلفة (EGP)', 'Category': 'الفئة التدريبية'}
                 )
-                fig_cat.update_layout(
-                    template='plotly_white',
-                    margin=dict(l=20, r=20, t=10, b=20),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
-                )
+                fig_cat.update_layout(template='plotly_white')
                 st.plotly_chart(fig_cat, use_container_width=True)
+            else:
+                st.warning("لا توجد بيانات كافية لعرض رسم الفئات.")
 
-        st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
-        chart_col3, chart_col4 = st.columns(2)
+        st.markdown("---")
+        col3, col4 = st.columns(2)
 
-        with chart_col3:
-            st.markdown("### ✅ مؤشرات إتمام الدورات وحصد الشهادات")
+        with col3:
+            st.subheader("✅ نسب الإتمام والحصول على الشهادات")
             if total_trainings > 0:
                 from plotly.subplots import make_subplots
                 comp_counts = filtered_df['Completed'].value_counts()
                 cert_counts = filtered_df['Certificate'].value_counts()
                 
                 fig_pies = make_subplots(rows=1, cols=2, specs=[[{'type':'domain'}, {'type':'domain'}]],
-                                         subplot_titles=['إتمام البرنامج', 'استحقاق الشهادة'])
+                                         subplot_titles=['نسبة إتمام التدريب', 'نسبة الحصول على شهادة'])
                 
-                fig_pies.add_trace(go.Pie(labels=comp_counts.index, values=comp_counts.values, name="Completion", marker=dict(colors=['#1E3A8A', '#F1F5F9'])), 1, 1)
-                fig_pies.add_trace(go.Pie(labels=cert_counts.index, values=cert_counts.values, name="Certificates", marker=dict(colors=['#10B981', '#E2E8F0'])), 1, 2)
+                fig_pies.add_trace(ui.Pie(labels=comp_counts.index, values=comp_counts.values, name="الإتمام", marker=dict(colors=['#2563EB', '#EF4444'])), 1, 1)
+                fig_pies.add_trace(ui.Pie(labels=cert_counts.index, values=cert_counts.values, name="الشهادات", marker=dict(colors=['#10B981', '#F59E0B'])), 1, 2)
                 
-                fig_pies.update_traces(hole=.4, hoverinfo="label+percent")
-                fig_pies.update_layout(template='plotly_white', margin=dict(l=10, r=10, t=30, b=10))
+                fig_pies.update_traces(hole=.4, hoverinfo="label+percent+name")
+                fig_pies.update_layout(title_text="حالة التدريب والشهادات الممنوحة", template='plotly_white')
                 st.plotly_chart(fig_pies, use_container_width=True)
+            else:
+                st.warning("لا توجد بيانات كافية لعرض النسب.")
 
-        with chart_col4:
-            st.markdown("### 📈 المنحنى الزمني للإنفاق على التدريب والشهور")
+        with col4:
+            st.subheader("📈 الخط الزمني للتدريب والتكلفة على مدار السنة")
             if total_trainings > 0:
-                timeline = filtered_df.groupby('Month').agg({'Cost_EGP': 'sum'}).reset_index().sort_values('Month')
-                fig_time = px.area(
+                timeline = filtered_df.groupby('Month').agg({'Cost_EGP': 'sum', 'Training_ID': 'count'}).reset_index().sort_values('Month')
+                fig_time = px.line(
                     timeline, 
                     x='Month', 
                     y='Cost_EGP', 
                     markers=True,
-                    labels={'Cost_EGP': 'الميزانية المستهلكة (EGP)', 'Month': 'الفترة الزمنية'}
+                    title="الإنفاق الشهري على التدريب خلال السنة",
+                    labels={'Cost_EGP': 'التكلفة الإجمالية (EGP)', 'Month': 'الشهر'},
+                    color_discrete_sequence=['#1E3A8A']
                 )
-                fig_time.update_traces(line_color='#1E3A8A', fillcolor='rgba(30, 58, 138, 0.2)')
-                fig_time.update_layout(template='plotly_white', margin=dict(l=20, r=20, t=10, b=20))
+                fig_time.update_layout(template='plotly_white')
                 st.plotly_chart(fig_time, use_container_width=True)
+            else:
+                st.warning("لا توجد بيانات كافية لعرض الخط الزمني.")
 
-        st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
-        
-        # 7. Distribution Section
-        st.markdown("### 🎯 مستويات أداء المتدربين والدرجات المستهدفة")
-        dist_col1, dist_col2 = st.columns([1, 2])
-        
-        with dist_col1:
+        st.markdown("---")
+        st.subheader("🎯 توزيع درجات الموظفين وتحليل الأداء (Score % Distribution)")
+
+        col5, col6 = st.columns([1, 2])
+
+        with col5:
             if total_trainings > 0:
                 dept_scores = filtered_df.groupby('Department')['Score_%'].mean().reset_index().sort_values(by='Score_%', ascending=False)
-                st.dataframe(
-                    dept_scores.style.format({'Score_%': '{:.1f}%'}).background_gradient(cmap='Blues'),
-                    hide_index=True,
-                    use_container_width=True
-                )
+                st.markdown("**📊 متوسط الدرجات حسب الأقسام:**")
+                st.dataframe(dept_scores.style.format({'Score_%': '{:.2f}%'}), hide_index=True, use_container_width=True)
+            else:
+                st.warning("لا توجد بيانات.")
 
-        with dist_col2:
+        with col6:
             if total_trainings > 0:
                 fig_hist = px.histogram(
                     filtered_df, 
                     x='Score_%', 
-                    nbins=15,
-                    color_discrete_sequence=['#3B82F6'],
-                    labels={'Score_%': 'الدرجة الكلية للموظف (%)', 'count': 'التكرار (عدد الموظفين)'}
+                    nbins=20, 
+                    title="توزيع درجات الموظفين بالكامل",
+                    labels={'Score_%': 'الدرجة (%)', 'count': 'عدد الموظفين'},
+                    color_discrete_sequence=['#10B981']
                 )
-                fig_hist.update_layout(template='plotly_white', margin=dict(l=20, r=20, t=10, b=20), barmode='overlay')
+                fig_hist.update_layout(template='plotly_white', barmode='overlay')
                 st.plotly_chart(fig_hist, use_container_width=True)
+            else:
+                st.warning("لا توجد بيانات.")
 
-        # 8. Clean Preview Block
+        # 7. Data Preview Section
         st.markdown("---")
-        with st.expander("🔍 استعراض وفحص قاعدة البيانات بعد التصفية (Filtered Raw Data)"):
+        with st.expander("👀 عرض البيانات المفلترة بالكامل (Show Filtered Data)"):
             st.dataframe(filtered_df, use_container_width=True)
 
     except Exception as e:
-        st.error(f"⚠️ بنية الملف المرفوع لا تتطابق مع الأعمدة المحددة في الكود الرئيسي: {e}")
+        st.error(f"⚠️ خطأ في هيكلة ملف البيانات المرفوع: {e}")
+        st.info("💡 تأكد أن الملف يحتوي على الأعمدة الأساسية المطلوبة مثل (Department, Cost_EGP, Start_Date...)")
 else:
-    # Premium Landing Notice for Client
-    st.markdown("""
-        <div style="background-color: #eff6ff; border-left: 6px solid #2563eb; padding: 25px; border-radius: 8px; margin-top: 20px;">
-            <h4 style="color: #1e40af; margin-top:0;">👋 مرحباً بك في النظام الذكي لتحليل البيانات!</h4>
-            <p style="color: #1e3a8a; margin-bottom:0;">لتشغيل لوحة التحكم وعرض التحليلات التفاعلية والرسوم البيانية لعملائك، يرجى سحب وإفلات ملف البيانات الخاص بك (Excel أو CSV) في الخانة المخصصة بالأعلى.</p>
-        </div>
-    """, unsafe_allow_html=True)
+    # رسالة تظهر للعميل طالما لم يقم برفع أي ملف بعد
+    st.info("👋 مرحباً بك! يرجى رفع ملف التدريب (CSV أو Excel) من الأعلى لعرض الداشبورد والتحليلات مباشرة.")
