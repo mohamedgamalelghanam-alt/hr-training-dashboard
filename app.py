@@ -31,7 +31,7 @@ st.markdown("""
 # 2. Data Loading Function
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Training.xlsx - Sheet1.csv")
+    df = pd.read_excel("Training.xlsx")
     df['Start_Date'] = pd.to_datetime(df['Start_Date'])
     df['End_Date'] = pd.to_datetime(df['End_Date'])
     df['Month'] = df['Start_Date'].dt.to_period('M').astype(str)
