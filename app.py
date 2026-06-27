@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as ui
+import os
 
 # 1. Page Configuration
 st.set_page_config(
@@ -28,22 +29,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Data Loading Function
+# 2. Data Loading Function (Smart & Flexible)
 @st.cache_data
 def load_data():
-    # تأكد أن اسم الملف على جيت هاب مطابق تماماً لحالة الأحرف هنا Training.xlsx
-    df = pd.read_excel("Training.xlsx")
-    df['Start_Date'] = pd.to_datetime(df['Start_Date'])
-    df['End_Date'] = pd.to_datetime(df['End_Date'])
-    df['Month'] = df['Start_Date'].dt.to_period('M').astype(str)
-    return df
+    target_file = "training.xlsx"
+    files_in_dir = os.listdir(".")
+    
+    # البحث عن الملف بغض النظر عن حالة الأحرف الكبيرة أو الصغيرة
+    matched_file = [f for f in files_in_dir if f.lower() == target_file]
+    
+    if matched_file:
+        actual_filename = matched_file[0]
+        df = pd.read_excel(actual_filename)
+        df['Start_Date'] = pd.to_datetime(df['Start_Date'])
+        df['End_Date'] = pd.to_datetime(df['End_Date'])
+        df['Month'] = df['Start_Date'].dt.to_period('M').astype(str)
+        return df
+    else:
+        raise FileNotFoundError(f"الملفات المتاحة في السيرفر حالياً هي: {files_in_dir}")
 
 try:
     df = load_data()
 except Exception as e:
-    # تم تحديث الرسالة هنا لتطبع الخطأ الحقيقي القادم من السيرفر فوراً
     st.error(f"⚠️ حدث خطأ أثناء تحميل البيانات من السيرفر: {e}")
-    st.info("💡 نصيحة مهندس: تأكد أن ملف 'Training.xlsx' مرفوع في المجلد الرئيسي (Root) على GitHub بنفس الاسم وبحروف مطابقة تماماً.")
+    st.info("💡 نصيحة مهندس: تأكد من رفع ملف الإكسل باسم 'Training.xlsx' في المجلد الرئيسي (Root) بجوار ملف app.py مباشرة وليس داخل مجلد فرعي.")
     st.stop()
 
 # 3. Sidebar Filters
